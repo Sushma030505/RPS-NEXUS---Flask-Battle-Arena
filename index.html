@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎮 Rock Paper Scissors - UPGRADED!</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            text-align: center; 
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { font-size: 3em; margin: 20px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .score { 
+            font-size: 2em; 
+            margin: 30px 0; 
+            padding: 20px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 20px;
+        }
+        .buttons { margin: 30px 0; }
+        button { 
+            font-size: 3em; 
+            padding: 20px 40px; 
+            margin: 10px; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        button:hover:not(:disabled) { 
+            background: rgba(255,255,255,0.4); 
+            transform: scale(1.1); 
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #result { 
+            font-size: 2em; 
+            margin: 30px 0; 
+            padding: 25px; 
+            min-height: 80px; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 20px; 
+        }
+        .win { color: #90EE90 !important; animation: glow 1s infinite; }
+        .lose { color: #FF6B6B !important; }
+        .tie { color: #FFD700 !important; }
+        @keyframes glow { 0%,100%{text-shadow:0 0 10px #90EE90} 50%{text-shadow:0 0 20px #90EE90} }
+        .stats { font-size: 1.2em; margin: 10px 0; opacity: 0.9; }
+        .reset-btn { font-size: 1.1em; padding: 10px 25px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Rock Paper Scissors</h1>
+        
+        <div class="score">
+            <div class="stats">Rounds Played: <span id="rounds">0</span></div>
+            <div>You: <span id="p-score">0</span> | Computer: <span id="c-score">0</span></div>
+            <div class="stats">Win Rate: <span id="win-rate">0%</span></div>
+        </div>
+        
+        <div class="buttons">
+            <button onclick="playGame('rock')" id="rock-btn">🪨 Rock</button>
+            <button onclick="playGame('paper')" id="paper-btn">📄 Paper</button>
+            <button onclick="playGame('scissors')" id="scissors-btn">✂️ Scissors</button>
+        </div>
+        
+        <div id="result">🚀 Click to start unlimited gameplay!</div>
+        
+        <button class="reset-btn" onclick="resetGame()">🔄 Reset Game</button>
+    </div>
+
+    <script>
+        let playerScore = 0;
+        let computerScore = 0;
+        let totalRounds = 0;
+        let totalWins = 0;
+
+        function playGame(choice) {
+            // Disable all buttons
+            document.querySelectorAll('.buttons button').forEach(btn => btn.disabled = true);
+            
+            fetch('/play', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({choice: choice})
+            })
+            .then(response => response.json())
+            .then(data => {
+                totalRounds++;
+                totalWins += data.result.includes('win') ? 1 : 0;
+                
+                // Update result
+                document.getElementById('result').innerHTML = `
+                    <strong>${data.player}</strong> vs <strong>${data.computer}</strong><br>
+                    <span class="${data.result.includes('win') ? 'win' : data.result.includes('lose') ? 'lose' : 'tie'}">
+                        ${data.result}
+                    </span>`;
+                
+                // Update scores
+                if (data.result.includes('win')) {
+                    playerScore++;
+                } else if (data.result.includes('lose')) {
+                    computerScore++;
+                }
+                
+                document.getElementById('p-score').textContent = playerScore;
+                document.getElementById('c-score').textContent = computerScore;
+                document.getElementById('rounds').textContent = totalRounds;
+                document.getElementById('win-rate').textContent = 
+                    totalRounds > 0 ? Math.round((totalWins/totalRounds)*100) + '%' : '0%';
+                
+                // Re-enable buttons after 1.5s
+                setTimeout(() => {
+                    document.querySelectorAll('.buttons button').forEach(btn => btn.disabled = false);
+                }, 1500);
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = '❌ Error! Refresh page.';
+                setTimeout(() => document.querySelectorAll('.buttons button').forEach(btn => btn.disabled = false), 2000);
+            });
+        }
+
+        function resetGame() {
+            playerScore = computerScore = totalRounds = totalWins = 0;
+            document.getElementById('p-score').textContent = '0';
+            document.getElementById('c-score').textContent = '0';
+            document.getElementById('rounds').textContent = '0';
+            document.getElementById('win-rate').textContent = '0%';
+            document.getElementById('result').innerHTML = '🚀 Click to start unlimited gameplay!';
+        }
+    </script>
+</body>
+</html>
